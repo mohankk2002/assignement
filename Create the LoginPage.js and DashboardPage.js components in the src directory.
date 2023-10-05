@@ -1,0 +1,62 @@
+import React, { useState } from 'react';
+import { BrowserRouter as Router, Route, Switch, Redirect } from 'react-router-dom';
+import axios from 'axios';
+
+import './App.css';
+import LoginPage from './LoginPage';
+import DashboardPage from './DashboardPage';
+
+function App() {
+  const [user, setUser] = useState(null);
+  const [jwtToken, setJwtToken] = useState(localStorage.getItem('jwtToken'));
+
+  const handleLogin = async (email, password) => {
+    try {
+      const response = await axios.post('/api/login', { email, password });
+
+      const { token } = response.data;
+
+      if (token) {
+        localStorage.setItem('jwtToken', token);
+        setUser(email);
+        setJwtToken(token);
+      } else {
+        console.error('Authentication failed: No token received');
+      }
+    } catch (error) {
+      console.error('Authentication failed', error);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('jwtToken');
+    setUser(null);
+    setJwtToken(null);
+  };
+
+  return (
+    <Router>
+      <div className="App">
+        <Switch>
+          <Route path="/login">
+            {user ? (
+              <Redirect to="/dashboard" />
+            ) : (
+              <LoginPage onLogin={handleLogin} />
+            )}
+          </Route>
+          <Route path="/dashboard">
+            {user ? (
+              <DashboardPage username={user} onLogout={handleLogout} />
+            ) : (
+              <Redirect to="/login" />
+            )}
+          </Route>
+          <Redirect from="/" to="/login" />
+        </Switch>
+      </div>
+    </Router>
+  );
+}
+
+export default App;
